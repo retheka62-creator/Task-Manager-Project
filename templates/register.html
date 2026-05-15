@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Register - Task Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script defer src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+<body>
+    <div class="center-form-root" id="main-root">
+      <div class="center-form-card">
+        <div class="center-form-header">
+          <h2>Create Account</h2>
+          <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+            <span id="theme-icon">&#x1F319;</span>
+          </button>
+        </div>
+        <form method="POST" class="center-form">
+          <input type="text" name="username" placeholder="Username" required autofocus>
+          <input type="password" name="password" placeholder="Password" required>
+          <button type="submit" class="main-btn">Register</button>
+        </form>
+        <p class="form-switch-note">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul class="flash">{% for message in messages %}<li>{{ message }}</li>{% endfor %}</ul>
+          {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+</body>
+</html>

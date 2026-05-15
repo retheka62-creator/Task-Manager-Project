@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Task Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script defer src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+<body>
+
+{% set progress = ((completed / total * 100)|round(0)) if total else 0 %}
+
+<div class="main-root" id="main-root">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-title">TaskManager</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}" class="nav-link active">📊 Dashboard</a>
+            <a href="{{ url_for('logout') }}" class="nav-link">🔑 Logout</a>
+
+            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+                <span id="theme-icon">🌙</span>
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="page-content">
+
+        <header class="top-bar">
+            <span class="welcome">
+                Welcome, <strong>{{ current_user.username }}</strong>
+            </span>
+        </header>
+
+        <!-- Stats -->
+        <section class="stats-section">
+
+            <div class="stat-card">
+                <div class="stat-label">Total Tasks</div>
+                <div class="stat-value">{{ total }}</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Completed</div>
+                <div class="stat-value">{{ completed }}</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Pending</div>
+                <div class="stat-value">{{ pending }}</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Progress</div>
+
+                <div class="stat-progress-bar">
+                    <div class="stat-progress-fill" style="width: {{ progress }}{{ '%' }};"></div>
+                </div>
+
+                <div class="stat-progress-text">
+                    {{ progress }}%
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Search / Filter -->
+        <div class="filter-row">
+            <input type="search" id="task-search" placeholder="Search tasks...">
+
+            <select id="status-filter">
+                <option value="all">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Completed">Completed</option>
+            </select>
+
+            <select id="priority-filter">
+                <option value="all">All Priority</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+
+            <button class="main-btn" id="apply-filters">Apply</button>
+        </div>
+
+        <!-- Add Task -->
+        <section class="add-task-section">
+            <details>
+                <summary class="add-task-summary">＋ Add New Task</summary>
+
+                <form method="POST" action="{{ url_for('create_task') }}" class="add-task-form">
+                    <input name="title" placeholder="Task title" required>
+
+                    <textarea name="description" placeholder="Task description"></textarea>
+
+                    <input type="date" name="due_date">
+
+                    <select name="priority">
+                        <option>High</option>
+                        <option selected>Medium</option>
+                        <option>Low</option>
+                    </select>
+
+                    <button type="submit" class="main-btn">Add Task</button>
+                </form>
+            </details>
+        </section>
+
+        <!-- Task Table -->
+        <section class="tasks-section">
+            <h2 class="tasks-title">Your Tasks</h2>
+
+            <div class="table-responsive">
+                <table id="tasks-table" class="tasks-table">
+
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>Due Date</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for t in tasks %}
+                        <tr
+                            data-priority="{{ t.priority }}"
+                            data-status="{{ t.status }}"
+                            data-title="{{ t.title|lower }}"
+                            data-desc="{{ t.description|lower }}"
+                        >
+
+                            <td>{{ t.title }}</td>
+
+                            <td>{{ t.description }}</td>
+
+                            <td>
+                                {% if t.due_date %}
+                                    {{ t.due_date }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <span class="prio-badge prio-{{ t.priority|lower }}">
+                                    {{ t.priority }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="status-badge status-{{ t.status|lower }}">
+                                    {{ t.status }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="task-actions">
+
+                                    {% if t.status != 'Completed' %}
+                                    <form method="POST" action="{{ url_for('complete_task', task_id=t.id) }}">
+                                        <button class="icon-btn">✓</button>
+                                    </form>
+
+                                    <details>
+                                        <summary class="icon-btn">✏</summary>
+
+                                        <form method="POST" action="{{ url_for('edit_task', task_id=t.id) }}" class="edit-task-form">
+
+                                            <input name="title" value="{{ t.title }}" required>
+
+                                            <textarea name="description">{{ t.description }}</textarea>
+
+                                            <input type="date" name="due_date" value="{{ t.due_date }}">
+
+                                            <select name="priority">
+                                                <option {% if t.priority == 'High' %}selected{% endif %}>High</option>
+                                                <option {% if t.priority == 'Medium' %}selected{% endif %}>Medium</option>
+                                                <option {% if t.priority == 'Low' %}selected{% endif %}>Low</option>
+                                            </select>
+
+                                            <button type="submit" class="main-btn">Update</button>
+                                        </form>
+                                    </details>
+                                    {% endif %}
+
+                                    <form method="POST" action="{{ url_for('delete_task', task_id=t.id) }}">
+                                        <button class="icon-btn">🗑</button>
+                                    </form>
+
+                                </div>
+                            </td>
+
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6">No tasks found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <ul class="flash">
+                        {% for message in messages %}
+                            <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
+
+        </section>
+
+    </div>
+</div>
+
+</body>
+</html>
